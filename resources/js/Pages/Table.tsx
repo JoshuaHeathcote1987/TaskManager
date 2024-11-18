@@ -1,49 +1,119 @@
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
-import { BsThreeDots } from 'react-icons/bs';
 import { FaSearch, FaFilter, FaSort, FaSortAlphaDownAlt, FaSortAlphaDown } from "react-icons/fa";
 import { PiDeviceMobileFill } from "react-icons/pi";
 import { MdDesktopWindows } from "react-icons/md";
 import { IoHelpBuoy } from "react-icons/io5";
 import Dropdown from "@/Components/Dropdown";
-import { CreateProject as CreateProjectModal } from "@/Components/TaskManager/Modals/CreateProject";
+import { CreateModal as CreateProjectModal } from "@/Components/TaskManager/Modals/CreateModal";
+import { Transition } from '@headlessui/react';
 
-type Project = { [key: string]: any };
-
-// Utility function to format dates
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at: string;
 }
 
-export default function Table({ auth, results, filters }: PageProps) {
-    const headers = Object.keys(results[0]);
-    const [visibleHeaders, setVisibleHeaders] = useState(headers); // Start with all headers visible
-    const [sortHeader, setSortHeader] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+// Update TableProps to use the User type for the user property
+interface TableProps {
+    auth: {
+        user: User; 
+    };
+    results: { [key: string]: any }[];
+    fields: any[];
+}
 
-    // Function to handle visibility toggle for headers
-    const handleFilterChange = (header: string) => {
-        setVisibleHeaders((prev) =>
-            prev.includes(header) ? prev.filter(h => h !== header) : [...prev, header]
-        );
+export default function Table({ auth, results, fields }: TableProps) {
+    
+    const pageSlug = window.location.pathname;
+
+    const headers = Object.keys(results[0]);
+    const [shownHeaders, setShownHeaders] = useState<string[]>([]);
+    const [selectedHeader, setSelectedHeader] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
+    const [sortedResults, setSortedResults] = useState<any[]>(results);
+    const [display, setDisplay] = useState<'desktop' | 'mobile'>('desktop');
+
+
+    // Effect to load the display mode from localStorage when the component mounts
+    useEffect(() => {
+        const storedDisplay = localStorage.getItem('taskManagerDisplayState');
+        if (storedDisplay) {
+            setDisplay(storedDisplay as 'desktop' | 'mobile'); // Ensure type safety
+        }
+    }, []); // Empty dependency array means this runs once when the component mounts
+
+
+    // Effect to save the display mode to localStorage whenever it changes
+    useEffect(() => {
+        if (display) {
+            localStorage.setItem('taskManagerDisplayState', display);
+        }
+    }, [display]); // Runs every time 'display' changes
+
+
+    useEffect(() => {
+        // Retrieve hidden headers from localStorage
+        const storedHeaders = JSON.parse(localStorage.getItem(`${pageSlug}-hiddenHeaders`) || "[]");
+
+        // Initialize shownHeaders (start with all headers not in localStorage)
+        const initialHeaders = headers.filter(header => !storedHeaders.includes(header));
+
+        // Update only if `shownHeaders` is different from `initialHeaders`
+        setShownHeaders((prevShownHeaders) => {
+            if (JSON.stringify(prevShownHeaders) !== JSON.stringify(initialHeaders)) {
+                return initialHeaders;
+            }
+            return prevShownHeaders; // Avoid triggering a re-render
+        });
+    }, [headers, pageSlug]);
+
+
+    useEffect(() => {
+        localStorage.setItem('taskManagerDisplayState', display);
+    }, [display]);
+
+
+    const handleSort = (direction: "asc" | "desc") => {
+        if (selectedHeader) {
+            setSortDirection(direction);
+
+            // Sort the results based on the selectedHeader and direction
+            const sorted = [...results].sort((a, b) => {
+                const valueA = a[selectedHeader] ?? ""; // Handle undefined or null values
+                const valueB = b[selectedHeader] ?? "";
+
+                if (valueA < valueB) return direction === "asc" ? -1 : 1;
+                if (valueA > valueB) return direction === "asc" ? 1 : -1;
+                return 0;
+            });
+
+            setSortedResults(sorted);
+        }
     };
 
-    // Sort data based on selected header and order
-    const sortedResults = [...results].sort((a, b) => {
-        if (!sortHeader) return 0;
-        const valueA = a[sortHeader];
-        const valueB = b[sortHeader];
-    
-        if (typeof valueA === 'string' && typeof valueB === 'string') {
-            return sortOrder === 'asc' ? valueB.localeCompare(valueA) : valueA.localeCompare(valueB);
+
+    const handleCheckboxChange = (header: string) => {
+        let updatedHeaders: string[];
+
+        if (shownHeaders.includes(header)) {
+            // Hide header
+            updatedHeaders = shownHeaders.filter(h => h !== header);
+        } else {
+            // Show header
+            updatedHeaders = [...shownHeaders, header];
         }
-        return sortOrder === 'asc' ? valueB - valueA : valueA - valueB;
-    });
-    
+
+        setShownHeaders(updatedHeaders);
+
+        // Update local storage with hidden headers (inverse of shownHeaders)
+        const hiddenHeaders = headers.filter(h => !updatedHeaders.includes(h));
+        localStorage.setItem(`${pageSlug}-hiddenHeaders`, JSON.stringify(hiddenHeaders));
+    };
+
 
     return (
         <AuthenticatedLayout
@@ -51,11 +121,12 @@ export default function Table({ auth, results, filters }: PageProps) {
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>}
         >
             <Head title="Dashboard" />
-
-            <div className="flex flex-row justify-between items-center gap-4 pl-4 py-4">
+            <div className="flex flex-row justify-between items-center gap-4 pl-4">
                 <div className="flex flex-row justify-start items-center gap-8">
-                    <CreateProjectModal />
-
+                    <CreateProjectModal
+                        fields={fields}
+                        submitUrl={'/dashboard/projects'}
+                    />
                     {/* Filter Dropdown */}
                     <Dropdown>
                         <Dropdown.Trigger>
@@ -68,21 +139,22 @@ export default function Table({ auth, results, filters }: PageProps) {
                             <div className="p-4 border-b font-semibold">Display Headers</div>
                             <div className="p-4 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                 {headers.map((header, index) => (
-                                    <div key={index} className="flex flex-row justify-between items-center hover:bg-slate-100 p-1 rounded-lg">
+                                    <div
+                                        key={index}
+                                        className="flex flex-row justify-between items-center hover:bg-slate-100 p-1 rounded-lg"
+                                    >
                                         <label>{header.substring(0, 8)}</label>
                                         <input
                                             type="checkbox"
-                                            checked={visibleHeaders.includes(header)}
-                                            onChange={() => handleFilterChange(header)}
                                             className="rounded-md cursor-pointer"
+                                            checked={shownHeaders.includes(header)}
+                                            onChange={() => handleCheckboxChange(header)}
                                         />
                                     </div>
                                 ))}
                             </div>
                         </Dropdown.Content>
                     </Dropdown>
-
-                    {/* Sort Dropdown */}
                     <Dropdown>
                         <Dropdown.Trigger>
                             <button className="flex flex-col justify-center items-center gap-2 group">
@@ -93,60 +165,52 @@ export default function Table({ auth, results, filters }: PageProps) {
                         <Dropdown.Content align='left' contentClasses='py-1 bg-white w-96'>
                             <div className="p-4 border-b font-semibold">Sort Column ASC</div>
                             <div className="p-4 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                {headers.map((header, index) => (
-                                    <div key={index} className="flex flex-row justify-between items-center hover:bg-slate-100 p-1 rounded-lg">
+                                {headers.map((header: string, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex flex-row justify-between items-center hover:bg-slate-100 p-1 rounded-lg"
+                                    >
                                         <label>{header.substring(0, 8)}</label>
                                         <input
                                             type="radio"
                                             name="sortColumn"
-                                            checked={sortHeader === header}
-                                            onChange={() => setSortHeader(header)}
+                                            value={header}
+                                            checked={selectedHeader === header}
+                                            onChange={() => setSelectedHeader(header)}
                                             className="rounded-md cursor-pointer"
                                         />
                                     </div>
                                 ))}
                             </div>
-                            {/* <div className="p-4 flex flex-row justify-center gap-12 text-4xl">
-                                <button onClick={() => setSortOrder('asc')}>
-                                    <FaSortAlphaDownAlt className={`hover:text-orange-500 ${sortOrder === 'asc' && 'text-orange-500'}`} />
+                            <div className="p-4 flex flex-row justify-center gap-12 text-4xl">
+                                <button
+                                    onClick={() => handleSort("desc")}
+                                    className={sortDirection === "desc" ? "text-orange-500" : ""}
+                                >
+                                    <FaSortAlphaDownAlt className="hover:text-orange-500" />
                                 </button>
-                                <button onClick={() => setSortOrder('desc')}>
-                                    <FaSortAlphaDown className={`hover:text-orange-500 ${sortOrder === 'desc' && 'text-orange-500'}`} />
+                                <button
+                                    onClick={() => handleSort("asc")}
+                                    className={sortDirection === "asc" ? "text-orange-500" : ""}
+                                >
+                                    <FaSortAlphaDown className="hover:text-orange-500" />
                                 </button>
-                            </div> */}
+                            </div>
                         </Dropdown.Content>
                     </Dropdown>
-
-                    <Dropdown>
-                        <Dropdown.Trigger>
-                            <button className="flex flex-col justify-center items-center gap-2 group">
-                                <PiDeviceMobileFill className="text-xl" />
-                                <div className="group-hover:text-orange-500">Mobile</div>
-                            </button>
-                        </Dropdown.Trigger>
-                        <Dropdown.Content align='left'>
-                            <div className="p-4">Mobile view settings here...</div>
-                        </Dropdown.Content>
-                    </Dropdown>
-
-                    <Dropdown>
-                        <Dropdown.Trigger>
-                            <button className="flex flex-col justify-center items-center gap-2 group">
-                                <MdDesktopWindows className="text-xl" />
-                                <div className="group-hover:text-orange-500">Desktop</div>
-                            </button>
-                        </Dropdown.Trigger>
-                        <Dropdown.Content align='left'>
-                            <div className="p-4">Desktop view settings here...</div>
-                        </Dropdown.Content>
-                    </Dropdown>
-
+                    <button onClick={() => setDisplay("desktop")} className={`flex flex-col justify-center items-center gap-2 group ${display === 'desktop' ? 'text-orange-500' : ''}`}>
+                        <MdDesktopWindows className="text-xl" />
+                        <div className="group-hover:text-orange-500">Desktop</div>
+                    </button>
+                    <button onClick={() => setDisplay("mobile")} className={`flex flex-col justify-center items-center gap-2 group ${display === 'mobile' ? 'text-orange-500' : ''}`}>
+                        <PiDeviceMobileFill className="text-xl" />
+                        <div className="group-hover:text-orange-500">Mobile</div>
+                    </button>
                     <button className="flex flex-col justify-center items-center gap-2 group">
                         <IoHelpBuoy className="text-xl" />
                         <div className="group-hover:text-orange-500">Help</div>
                     </button>
                 </div>
-
                 {/* Search */}
                 <div className="flex flex-row justify-end items-center gap-4">
                     <input
@@ -163,45 +227,138 @@ export default function Table({ auth, results, filters }: PageProps) {
                     </button>
                 </div>
             </div>
-
-            {/* Table */}
-            <div className="overflow-hidden shadow rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            {visibleHeaders.map((header, index) => (
-                                <th key={index} className="px-4 py-2 font-semibold text-sm uppercase tracking-wider text-gray-700 text-left">
-                                    {header}
-                                </th>
-                            ))}
-                            <th className="px-4 py-2 font-semibold text-sm uppercase tracking-wider text-gray-700 text-left">
-                                Options
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedResults.length > 0 ? (
-                            sortedResults.map((result, index) => (
-                                <tr key={index} className="hover:bg-gray-50">
-                                    {visibleHeaders.map((header, i) => (
-                                        <td key={i} className="px-4 py-2 text-gray-700">
-                                            {result[header]}
-                                        </td>
-                                    ))}
-                                    <td className="px-4 py-2 text-center"><BsThreeDots /></td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={visibleHeaders.length} className="px-4 py-2 text-center text-gray-500">
-                                    There are currently no projects.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
+            <Transition
+                key={pageSlug}
+                appear
+                show={true}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+            >
+                {/* Desktop View */}
+                {display === 'desktop' && (
+                    <Transition
+                        key="desktop"
+                        appear
+                        show={true}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="overflow-auto shadow rounded-lg">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-100">
+                                    <tr>
+                                        {shownHeaders.map((header) => (
+                                            <th
+                                                key={header}
+                                                className="px-4 py-2 font-semibold text-sm uppercase tracking-wider text-gray-700 text-left"
+                                            >
+                                                {header}
+                                            </th>
+                                        ))}
+                                        <th className="px-4 py-2 font-semibold text-sm uppercase tracking-wider text-gray-700 text-left">
+                                            Options
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {results.length > 0 ? (
+                                        results.map((result, index) => (
+                                            <tr key={index} className="hover:bg-gray-50">
+                                                {shownHeaders.map((header) => (
+                                                    <td key={header} className="px-4 py-2">
+                                                        {result[header]} {/* Display the value for the header */}
+                                                    </td>
+                                                ))}
+                                                <td className="px-4 py-2">
+                                                    {/* Additional Options Column if needed */}
+                                                    <button className="text-blue-600 hover:underline">Edit</button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={shownHeaders.length + 1}
+                                                className="px-4 py-2 text-center text-gray-500"
+                                            >
+                                                There are currently no projects.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Transition>
+                )}
+                {/* Mobile View */}
+                {display === 'mobile' && (
+                    <Transition
+                        key="mobile"
+                        appear
+                        show={true}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="max-w-full mx-auto my-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {results.length > 0 ? (
+                                results.map((result, index) => (
+                                    <div
+                                        key={index}
+                                        className="w-full mx-auto bg-white shadow-lg rounded-lg border border-gray-200 p-6"
+                                    >
+                                        {/* Loop through the keys of the result object */}
+                                        {Object.keys(result).map(
+                                            (key) =>
+                                                key !== 'id' &&
+                                                key !== 'actions' && (
+                                                    <div
+                                                        key={key}
+                                                        className="text-sm text-gray-600 mb-4"
+                                                    >
+                                                        <p>
+                                                            <span className="font-medium">
+                                                                {key
+                                                                    .replace(
+                                                                        /([A-Z])/g,
+                                                                        ' $1'
+                                                                    )
+                                                                    .toUpperCase()}
+                                                                :
+                                                            </span>{' '}
+                                                            {result[key]}
+                                                        </p>
+                                                    </div>
+                                                )
+                                        )}
+                                        {/* Actions */}
+                                        <div className="flex justify-end space-x-4">
+                                            <button className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 focus:outline-none">
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-row justify-center items-center">
+                                    There are no results
+                                </div>
+                            )}
+                        </div>
+                    </Transition>
+                )}
+            </Transition>
         </AuthenticatedLayout>
     );
 }

@@ -55,6 +55,10 @@ const Content = ({ align = 'right', width = '48', contentClasses = 'py-1 bg-whit
         widthClasses = 'w-48';
     }
 
+    else if (width === 'full') {
+        widthClasses = 'w-full'
+    }
+
     return (
         <>
             <Transition

@@ -81,5 +81,5 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
         user: User;
     };
     results: { [key: string]: any }[];
-    filters: string[];
+    fields: any[];
 };

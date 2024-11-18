@@ -5,6 +5,8 @@ import { PlaySound } from '@/Components/TaskManager/Components/PlaySound';
 
 import { Logo } from '@/Components/TaskManager/Components/Logo';
 
+import FadeIn from '@/Layouts/FadeIn';
+
 export default function Welcome({ auth, laravelVersion, phpVersion }: PageProps<{ laravelVersion: string, phpVersion: string }>) {
     return (
         <>
