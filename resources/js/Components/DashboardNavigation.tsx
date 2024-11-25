@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '@/Components/TaskManager/Components/Button';
+import { Button } from '@/Components/Common/Button';
 
 import { FaBeer } from 'react-icons/fa';
 

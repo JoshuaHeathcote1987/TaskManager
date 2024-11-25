@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Project;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectController extends Controller
@@ -15,7 +16,10 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects = \App\Models\Project::all();
+        $url = "/dashboard/projects";
+
+        $projects = Project::all();
+
         $fields = [
             [
                 'name' => 'name',               // The name of the field (used in the form data and as the field's key)
@@ -53,10 +57,9 @@ class ProjectController extends Controller
                 'value' => '',                  // Default value (empty for now)
                 'placeholder' => ''             // Date fields typically don't need a placeholder
             ]
-        ];
+            ];
 
-
-        return Inertia::render('Table', ['results' => $projects, 'fields' => $fields]);
+        return Inertia::render('Projects', ['url' => $url, 'results' => $projects, 'fields' => $fields]);
     }
 
     /**
@@ -77,24 +80,26 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         // Validate the request
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string|max:1000',
-            'status' => 'required|string|in:Active,Inactive',
-            'start_date' => 'required|date|before_or_equal:end_date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'owner_id' => 'nullable|integer|exists:users,id',
-        ]);
+        // $validatedData = $request->validate([
+        //     'name' => 'required|string|max:255',
+        //     'description' => 'required|string|max:1000',
+        //     'status' => 'required|string|in:Active,Inactive',
+        //     'start_date' => 'required|date|before_or_equal:end_date',
+        //     'end_date' => 'required|date|after_or_equal:start_date',
+        //     'owner_id' => 'nullable|integer|exists:users,id',
+        // ]);
 
         $project = new \App\Models\Project;
-        $project->name = $validatedData['name'];
-        $project->description = $validatedData['description'];
-        $project->status = $validatedData['status'];
-        $project->start_date = $validatedData['start_date'];
-        $project->end_date = $validatedData['end_date'];
+        $project->name = $request['name'];
+        $project->description = $request['description'];
+        $project->status = $request['status'];
+        $project->start_date = $request['start_date'];
+        $project->end_date = $request['end_date'];
         $project->owner_id = Auth::id();
         $project->save();
+        
     }
+
 
     /**
      * Display the specified resource.
@@ -137,6 +142,7 @@ class ProjectController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $project = Project::where('project_id', $id)->first();
+        $project->delete();
     }
 }

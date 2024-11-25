@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Meeting;
+use Illuminate\Http\Request;
 
 class MeetingController extends Controller
 {
@@ -14,7 +15,7 @@ class MeetingController extends Controller
      */
     public function index()
     {
-        $meetings = \App\Models\Meeting::all();
+        $meetings = Meeting::all();
         $fields = [
             [
                 'name' => 'meeting_id',          // The name of the field (used in the form data and as the field's key)

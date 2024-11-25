@@ -1,9 +1,9 @@
 import { Link, Head } from '@inertiajs/react';
 import { PageProps } from '@/types';
 
-import { PlaySound } from '@/Components/TaskManager/Components/PlaySound';
+import { PlaySound } from '@/Components/Common/PlaySound';
 
-import { Logo } from '@/Components/TaskManager/Components/Logo';
+import { Logo } from '@/Components/Common/Logo';
 
 import FadeIn from '@/Layouts/FadeIn';
 

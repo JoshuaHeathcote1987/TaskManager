@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Risk;
 
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class RiskController extends Controller
 {
@@ -15,7 +16,7 @@ class RiskController extends Controller
      */
     public function index()
     {
-        $risks = \App\Models\Risk::all();
+        $risks = Risk::all();
         $fields = [
             [
                 'name' => 'risk_id',            // The name of the field (used in the form data and as the field's key)

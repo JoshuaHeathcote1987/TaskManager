@@ -9,6 +9,7 @@ class Project extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'project_id';
     
     /**
      * The attributes that are mass assignable.

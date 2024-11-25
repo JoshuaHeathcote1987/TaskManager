@@ -3,11 +3,9 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { DashboardNavigation } from '@/Components/TaskManager/Components/DashboardNavigation';
+
 import { Link } from '@inertiajs/react';
 import { User } from '@/types';
-
-import { Logo } from '@/Components/TaskManager/Components/Logo';
 
 export default function Authenticated({ user, header, children }: PropsWithChildren<{ user: User, header?: ReactNode }>) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
@@ -20,7 +18,7 @@ export default function Authenticated({ user, header, children }: PropsWithChild
                         <div className="flex">
                             <div className="shrink-0 flex items-center">
                                 <Link href="/">
-                                    <Logo size="w-12" />
+                                    <ApplicationLogo />
                                 </Link>
                             </div>
 
@@ -127,7 +125,6 @@ export default function Authenticated({ user, header, children }: PropsWithChild
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white dark:bg-slate-950 text-black dark:text-white p-4 space-y-8 overflow-hidden shadow-sm sm:rounded-lg">
-                        <DashboardNavigation />
                         {children}
                     </div>
                 </div>

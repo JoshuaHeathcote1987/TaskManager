@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Timesheet;
+use Illuminate\Http\Request;
 
 class TimesheetController extends Controller
 {
@@ -14,7 +15,7 @@ class TimesheetController extends Controller
      */
     public function index()
     {
-        $timesheets = \App\Models\Timesheet::all();
+        $timesheets = Timesheet::all();
         $fields = [
             [
                 'name' => 'timesheet_id',        // The name of the field (used in the form data and as the field's key)

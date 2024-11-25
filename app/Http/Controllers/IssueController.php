@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Issue;
+use Illuminate\Http\Request;
 
 class IssueController extends Controller
 {
@@ -14,7 +15,7 @@ class IssueController extends Controller
      */
     public function index()
     {
-        $issues = \App\Models\Issue::all();
+        $issues = Issue::all();
         $fields = [
             [
                 'name' => 'issue_id',            // The name of the field (used in the form data and as the field's key)

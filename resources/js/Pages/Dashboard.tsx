@@ -1,26 +1,19 @@
-import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { PageProps } from '@/types';
-
-import { Button } from '@/Components/TaskManager/Components/Button';
-import { Contact } from '@/Components/TaskManager/Components/Contact';
-import { Percentage } from '@/Components/TaskManager/Components/Percentage';
-
-import Calendar from '@/Components/TaskManager/Components/Calendar';
-
-import { FaBeer } from 'react-icons/fa';
+import { Contact } from '@/Components/Common/Contact';
+import { Percentage } from '@/Components/Common/Percentage';
+import { DashboardNavigation } from '@/Components/DashboardNavigation';
+import Calendar from '@/Components/Common/Calendar';
 
 export default function Dashboard({ auth }: PageProps) {
-
-    
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Dashboard</h2>}
         >
             <Head title="Dashboard" />
-
+            <DashboardNavigation />
             
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="flex flex-col space-y-4">

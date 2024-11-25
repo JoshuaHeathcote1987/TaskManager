@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Task;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
@@ -14,7 +15,7 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $tasks = \App\Models\Task::all();
+        $tasks = Task::all();
         $fields = [
             [
                 'name' => 'task_id',             // The name of the field (used in the form data and as the field's key)
