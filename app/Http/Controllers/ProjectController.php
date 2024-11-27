@@ -57,7 +57,7 @@ class ProjectController extends Controller
                 'value' => '',                  // Default value (empty for now)
                 'placeholder' => ''             // Date fields typically don't need a placeholder
             ]
-            ];
+        ];
 
         return Inertia::render('Projects', ['url' => $url, 'results' => $projects, 'fields' => $fields]);
     }
@@ -97,9 +97,7 @@ class ProjectController extends Controller
         $project->end_date = $request['end_date'];
         $project->owner_id = Auth::id();
         $project->save();
-        
     }
-
 
     /**
      * Display the specified resource.
@@ -113,25 +111,26 @@ class ProjectController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return Response
-     */
-    public function edit($id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      *
      * @param  int  $id
      * @return Response
      */
-    public function update($id)
+    public function update(Request $request)
     {
-        //
+        // Find the project by its ID
+        $project = Project::where('project_id', $request['project_id'])->first();
+
+        // Assign request values to the project's attributes manually
+        $project->name = $request->name;
+        $project->description = $request->description;
+        $project->status = $request->status;
+        $project->start_date = $request->start_date;
+        $project->end_date = $request->end_date;
+        $project->owner_id = $request->owner_id;
+
+        // Save the updated project to the database
+        $project->save();
     }
 
     /**
